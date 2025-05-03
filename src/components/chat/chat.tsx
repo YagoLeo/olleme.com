@@ -57,6 +57,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
   const base64Images = useChatStore((state) => state.base64Images);
   const setBase64Images = useChatStore((state) => state.setBase64Images);
   const selectedModel = useChatStore((state) => state.selectedModel);
+  const ollamaUrl = useChatStore((state) => state.ollamaUrl);
   const saveMessages = useChatStore((state) => state.saveMessages);
   const getMessagesById = useChatStore((state) => state.getMessagesById);
   const router = useRouter();
@@ -88,6 +89,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
     const requestOptions: ChatRequestOptions = {
       body: {
         selectedModel: selectedModel,
+        ollamaUrl: ollamaUrl,
       },
       ...(base64Images && {
         data: {
@@ -157,6 +159,7 @@ export default function Chat({ initialMessages, id, isMobile }: ChatProps) {
               const requestOptions: ChatRequestOptions = {
                 body: {
                   selectedModel: selectedModel,
+                  ollamaUrl: ollamaUrl,
                 },
               };
 

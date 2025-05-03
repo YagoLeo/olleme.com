@@ -1,10 +1,11 @@
 // app/api/model/route.ts
 export async function POST(req: Request) {
-  const { name } = await req.json();
+  const { name, ollamaUrl } = await req.json();
 
-  const ollamaUrl = process.env.OLLAMA_URL;
+  // 使用提供的ollamaUrl，如果没有则使用环境变量
+  const apiUrl = ollamaUrl;
 
-  const response = await fetch(ollamaUrl + "/api/pull", {
+  const response = await fetch(apiUrl + "/api/pull", {
     method: "POST",
     body: JSON.stringify({ name }),
   });

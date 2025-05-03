@@ -7,6 +7,11 @@ interface ChatSession {
   createdAt: string;
 }
 
+// 添加服务器模型映射接口
+interface ServerModels {
+  [url: string]: string[];
+}
+
 interface State {
   base64Images: string[] | null;
   chats: Record<string, ChatSession>;
@@ -16,6 +21,9 @@ interface State {
   isDownloading: boolean;
   downloadProgress: number;
   downloadingModel: string | null;
+  ollamaUrlArr: string[];
+  ollamaUrl: string;
+  serverModelsMap: ServerModels; // 新增服务器模型映射状态
 }
 
 interface Actions {
@@ -30,6 +38,10 @@ interface Actions {
   startDownload: (modelName: string) => void;
   stopDownload: () => void;
   setDownloadProgress: (progress: number) => void;
+  setOllamaUrl: (url: string) => void;
+  addOllamaUrl: (url: string) => void;
+  setServerModels: (url: string, models: string[]) => void; // 新增设置服务器模型的方法
+  getServerModels: (url: string) => string[]; // 新增获取服务器模型的方法
 }
 
 const useChatStore = create<State & Actions>()(
@@ -43,6 +55,21 @@ const useChatStore = create<State & Actions>()(
       isDownloading: false,
       downloadProgress: 0,
       downloadingModel: null, 
+      ollamaUrlArr: [
+        "http://59.110.239.236:11434",
+        "http://203.176.92.112:11434",
+        'http://43.136.23.105:11434',
+        'http://103.35.79.158:11434',
+        'http://182.150.117.139:11434',
+        'http://222.128.0.41:11434',
+        'http://36.103.168.52:11434',
+        'http://1.34.160.207:11434',
+        'http://121.41.92.19:11434',
+        'http://220.168.146.21:60001'
+      ],
+
+      ollamaUrl: "http://59.110.239.236:11434",
+      serverModelsMap: {}, // 初始化服务器模型映射为空对象
 
       setBase64Images: (base64Images) => set({ base64Images }),
       setUserName: (userName) => set({ userName }),
@@ -106,6 +133,26 @@ const useChatStore = create<State & Actions>()(
       stopDownload: () =>
         set({ isDownloading: false, downloadingModel: null, downloadProgress: 0 }),
       setDownloadProgress: (progress) => set({ downloadProgress: progress }),
+      
+      setOllamaUrl: (url) => set({ ollamaUrl: url }),
+      addOllamaUrl: (url) => set((state) => {
+        if (state.ollamaUrlArr.includes(url)) return state;
+        return { ollamaUrlArr: [...state.ollamaUrlArr, url] };
+      }),
+      
+      // 新增设置服务器模型的方法
+      setServerModels: (url, models) => set((state) => ({
+        serverModelsMap: {
+          ...state.serverModelsMap,
+          [url]: models
+        }
+      })),
+      
+      // 新增获取服务器模型的方法
+      getServerModels: (url) => {
+        const state = get();
+        return state.serverModelsMap[url] || [];
+      }
     }),
     {
       name: "nextjs-ollama-ui-state",
@@ -114,9 +161,59 @@ const useChatStore = create<State & Actions>()(
         currentChatId: state.currentChatId,
         selectedModel: state.selectedModel,
         userName: state.userName,
+        ollamaUrlArr: state.ollamaUrlArr,
+        ollamaUrl: state.ollamaUrl,
+        serverModelsMap: state.serverModelsMap,
       }),
+      migrate: (persistedState: any, version) => {
+        const defaultUrls = ["http://59.110.239.236:11434", "http://203.176.92.112:11434"];
+        
+        if (persistedState.ollamaUrlArr) {
+          let updatedUrls = persistedState.ollamaUrlArr.filter(
+            (url: string) => !url.includes("127.0.0.1")
+          );
+          
+          defaultUrls.forEach(url => {
+            if (!updatedUrls.includes(url)) {
+              updatedUrls.push(url);
+            }
+          });
+          
+          persistedState.ollamaUrlArr = updatedUrls;
+          
+          if (persistedState.ollamaUrl && persistedState.ollamaUrl.includes("127.0.0.1")) {
+            persistedState.ollamaUrl = defaultUrls[0];
+          }
+          
+          persistedState.serverModelsMap = {};
+        }
+        
+        return persistedState as State;
+      },
     }
   )
 );
+
+if (typeof window !== 'undefined') {
+  setTimeout(() => {
+    const state = useChatStore.getState();
+    if (state.ollamaUrlArr.some(url => url.includes("127.0.0.1"))) {
+      const defaultUrls = ["http://59.110.239.236:11434", "http://203.176.92.112:11434"];
+      const updatedUrls = state.ollamaUrlArr.filter(url => !url.includes("127.0.0.1"));
+      
+      defaultUrls.forEach(url => {
+        if (!updatedUrls.includes(url)) {
+          updatedUrls.push(url);
+        }
+      });
+      
+      useChatStore.setState({ 
+        ollamaUrlArr: updatedUrls,
+        ollamaUrl: state.ollamaUrl.includes("127.0.0.1") ? defaultUrls[0] : state.ollamaUrl,
+        serverModelsMap: {}
+      });
+    }
+  }, 0);
+}
 
 export default useChatStore;

@@ -34,6 +34,7 @@ export default function PullModelForm() {
     startDownload,
     stopDownload,
     setDownloadProgress,
+    ollamaUrl,
   } = useChatStore();
 
   const router = useRouter();
@@ -61,7 +62,10 @@ export default function PullModelForm() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name: modelName }),
+        body: JSON.stringify({ 
+          name: modelName,
+          ollamaUrl: ollamaUrl 
+        }),
       });
 
       if (!response.ok) {
